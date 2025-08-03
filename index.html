@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculateur de Poids Étalon pour Balances</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header::before {
+            content: "⚖️";
+            font-size: 4em;
+            position: absolute;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.3;
+        }
+
+        .header h1 {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.3em;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .content {
+            padding: 50px;
+        }
+
+        .input-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 40px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+            border-left: 6px solid #3498db;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        .input-section h2 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-section h2::before {
+            content: "📊";
+            margin-right: 15px;
+            font-size: 1.2em;
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1.1em;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .unit-indicator {
+            position: absolute;
+            right: 15px;
+            top: 43px;
+            color: #7f8c8d;
+            font-size: 0.9em;
+            pointer-events: none;
+        }
+
+        .calculate-btn {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            font-size: 1.3em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            margin: 0 auto;
+            box-shadow: 0 8px 25px rgba(231, 76, 60, 0.3);
+            font-weight: 600;
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(231, 76, 60, 0.4);
+        }
+
+        .calculate-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .results-section {
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            margin-top: 40px;
+            display: none;
+            box-shadow: 0 15px 40px rgba(0,184,148,0.2);
+        }
+
+        .results-section.show {
+            display: block;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .results-section h2 {
+            margin-bottom: 30px;
+            font-size: 2em;
+            text-align: center;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .result-card {
+            background: rgba(255,255,255,0.15);
+            padding: 25px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .result-card h3 {
+            margin-bottom: 15px;
+            font-size: 1.4em;
+            color: #fff;
+        }
+
+        .result-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .result-detail {
+            font-size: 0.95em;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+
+        .recommendations-section {
+            background: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            margin-top: 30px;
+            display: none;
+            box-shadow: 0 15px 40px rgba(253, 203, 110, 0.2);
+        }
+
+        .recommendations-section.show {
+            display: block;
+            animation: slideIn 0.5s ease-out 0.2s both;
+        }
+
+        .recommendations-section h2 {
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            text-align: center;
+        }
+
+        .recommendation-item {
+            background: rgba(255,255,255,0.15);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .recommendation-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .recommendation-item h4 {
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .recommendation-item p {
+            line-height: 1.6;
+            opacity: 0.95;
+        }
+
+        .info-panel {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(116, 185, 255, 0.2);
+        }
+
+        .info-panel h3 {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .info-item {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .error-message {
+            background: #e74c3c;
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
+
+        .class-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+
+        .balance-sheet-section {
+            background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            margin-top: 30px;
+            box-shadow: 0 15px 40px rgba(108, 92, 231, 0.2);
+        }
+
+        .balance-sheet-section.show {
+            display: block;
+            animation: slideIn 0.5s ease-out 0.3s both;
+        }
+
+        .balance-sheet-section h2 {
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            text-align: center;
+        }
+
+        .balance-sheet-preview {
+            background: white;
+            color: #2c3e50;
+            margin: 20px 0;
+            padding: 30px;
+            border-radius: 10px;
+            font-family: 'Arial', sans-serif;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 20px auto;
+        }
+
+        .sheet-header {
+            text-align: center;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .sheet-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .sheet-subtitle {
+            font-size: 1em;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        .sheet-content {
+            line-height: 1.6;
+        }
+
+        .sheet-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .sheet-row:last-child {
+            border-bottom: none;
+        }
+
+        .sheet-label {
+            font-weight: 600;
+            color: #34495e;
+            flex: 1;
+        }
+
+        .sheet-value {
+            font-weight: bold;
+            color: #2c3e50;
+            flex: 1;
+            text-align: right;
+        }
+
+        .sheet-highlight {
+            background: #3498db;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .sheet-highlight .highlight-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .sheet-highlight .highlight-value {
+            font-size: 1.4em;
+            font-weight: bold;
+        }
+
+        .sheet-recommendations {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .sheet-recommendations h4 {
+            color: #e74c3c;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .sheet-recommendations ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .sheet-recommendations li {
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
+            color: white;
+            border: none;
+            padding: 15px 35px;
+            font-size: 1.2em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            margin: 20px auto 0;
+            box-shadow: 0 5px 15px rgba(232, 67, 147, 0.3);
+            font-weight: 600;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(232, 67, 147, 0.4);
+        }
+
+        .sheet-footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px solid #ecf0f1;
+            font-size: 0.8em;
+            color: #7f8c8d;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 30px 20px;
+            }
+            
+            .input-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚖️ Calculateur de Poids Étalon</h1>
+            <p>Détermination automatique selon les normes EN-45501 et GBP</p>
+        </div>
+
+        <div class="content">
+            <div class="info-panel">
+                <h3>ℹ️ Normes de Référence</h3>
+                <div class="info-item">
+                    <strong>Classification automatique :</strong> Selon le nombre d'échelons de vérification (MAX ÷ e)
+                </div>
+                <div class="info-item">
+                    <strong>Masse de contrôle :</strong> Calculée selon EN-45501 (50 000 × e pour Classe I, 5 000 × e pour Classe II)
+                </div>
+                <div class="info-item">
+                    <strong>Limites de tolérance :</strong> Basées sur l'Erreur Maximale Tolérée sur la Balance (EMTB)
+                </div>
+            </div>
+
+            <div class="input-section">
+                <h2>Caractéristiques de votre Balance</h2>
+                <div class="input-grid">
+                    <div class="form-group">
+                        <label for="max_capacity">Portée Maximale (MAX)</label>
+                        <input type="number" id="max_capacity" placeholder="3100" step="0.001">
+                        <div class="unit-indicator" id="max_unit">g</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="max_unit_select">Unité MAX</label>
+                        <select id="max_unit_select">
+                            <option value="mg">mg</option>
+                            <option value="g" selected>g</option>
+                            <option value="kg">kg</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="verification_scale">Échelon de Vérification (e)</label>
+                        <input type="number" id="verification_scale" placeholder="100" step="0.001">
+                        <div class="unit-indicator" id="e_unit">mg</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="e_unit_select">Unité e</label>
+                        <select id="e_unit_select">
+                            <option value="mg" selected>mg</option>
+                            <option value="g">g</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="display_scale">Échelon d'Affichage (d)</label>
+                        <input type="number" id="display_scale" placeholder="100" step="0.001">
+                        <div class="unit-indicator" id="d_unit">mg</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="d_unit_select">Unité d</label>
+                        <select id="d_unit_select">
+                            <option value="mg" selected>mg</option>
+                            <option value="g">g</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="min_capacity">Portée Minimale (MIN)</label>
+                        <input type="number" id="min_capacity" placeholder="0.5" step="0.001">
+                        <div class="unit-indicator" id="min_unit">g</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="min_unit_select">Unité MIN</label>
+                        <select id="min_unit_select">
+                            <option value="mg">mg</option>
+                            <option value="g" selected>g</option>
+                            <option value="kg">kg</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="calculate-btn" onclick="calculateControlWeight()">
+                    🔍 Calculer le Poids Étalon Optimal
+                </button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyse des caractéristiques et calcul en cours...</p>
+            </div>
+
+            <div class="error-message" id="error-message"></div>
+
+            <div class="results-section" id="results-section">
+                <h2>🎯 Résultats de l'Analyse</h2>
+                <div class="results-grid">
+                    <div class="result-card">
+                        <h3>Classification de la Balance</h3>
+                        <div class="result-value" id="balance-class">Classe II</div>
+                        <div class="result-detail" id="balance-class-detail">
+                            Nombre d'échelons : <span id="echelons-count">31 000</span>
+                        </div>
+                    </div>
+                    <div class="result-card">
+                        <h3>Poids Étalon Recommandé</h3>
+                        <div class="result-value" id="control-weight">500 g</div>
+                        <div class="result-detail" id="control-weight-detail">
+                            Classe de masse recommandée : <span id="weight-class">F1</span>
+                        </div>
+                    </div>
+                    <div class="result-card">
+                        <h3>Limites de Tolérance</h3>
+                        <div class="result-value" id="tolerance-limits">±100 mg</div>
+                        <div class="result-detail" id="tolerance-detail">
+                            Plage acceptable : <span id="acceptable-range">499,900 - 500,100 g</span>
+                        </div>
+                    </div>
+                    <div class="result-card">
+                        <h3>📋 Limites Acceptées</h3>
+                        <div class="result-value" id="accepted-limits" style="font-size: 1.5em; cursor: pointer;" onclick="copyToClipboard('accepted-limits')" title="Cliquer pour copier">499,900g - 500,100g</div>
+                        <div class="result-detail">
+                            Format pour document GBP<br>
+                            <small style="opacity: 0.8;">📎 Cliquez pour copier</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recommendations-section" id="recommendations-section">
+                <h2>📋 Recommandations Personnalisées</h2>
+                <div id="recommendations-content">
+                    <!-- Les recommandations seront générées dynamiquement -->
+                </div>
+            </div>
+
+            <div class="balance-sheet-section" id="balance-sheet-section">
+                <h2>📄 Fiche Balance - Prête à Imprimer</h2>
+                <div class="balance-sheet-preview" id="balance-sheet-preview">
+                    <div class="sheet-header">
+                        <div class="sheet-title">FICHE DE CONTRÔLE BALANCE</div>
+                        <div class="sheet-subtitle">Conforme aux Bonnes Pratiques Pharmaceutiques</div>
+                    </div>
+                    <div class="sheet-content">
+                        <p style="text-align: center; color: #7f8c8d; font-style: italic; padding: 40px;">
+                            🔍 Effectuez un calcul pour générer automatiquement votre fiche balance personnalisée
+                        </p>
+                    </div>
+                </div>
+                <button class="export-btn" onclick="exportBalanceSheetToPDF()" id="export-balance-btn">
+                    📄 Exporter la Fiche PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variable globale pour tracker si un calcul a été effectué
+        let calculationPerformed = false;
+
+        // Mise à jour des indicateurs d'unité
+        document.addEventListener('DOMContentLoaded', function() {
+            const unitSelects = [
+                {select: 'max_unit_select', indicator: 'max_unit'},
+                {select: 'e_unit_select', indicator: 'e_unit'},
+                {select: 'd_unit_select', indicator: 'd_unit'},
+                {select: 'min_unit_select', indicator: 'min_unit'}
+            ];
+
+            unitSelects.forEach(item => {
+                const select = document.getElementById(item.select);
+                const indicator = document.getElementById(item.indicator);
+                
+                select.addEventListener('change', function() {
+                    indicator.textContent = this.value;
+                });
+            });
+        });
+
+        // Base de données des recommandations selon les normes
+        const balanceClassification = {
+            getClass: function(echelons) {
+                if (echelons >= 61000) return 'I';
+                if (echelons >= 6000) return 'II';
+                if (echelons >= 1000) return 'III';
+                return 'IV';
+            },
+            
+            getControlWeight: function(balanceClass, e_mg) {
+                const multipliers = {
+                    'I': 50000,
+                    'II': 5000,
+                    'III': 1000,
+                    'IV': 500
+                };
+                
+                return (multipliers[balanceClass] || 5000) * e_mg;
+            },
+            
+            getTolerance: function(balanceClass, weight_mg, e_mg) {
+                const tolerances = {
+                    'I': [
+                        {max: 50000, tolerance: 1},
+                        {max: 200000, tolerance: 2},
+                        {max: Infinity, tolerance: 3}
+                    ],
+                    'II': [
+                        {max: 5000, tolerance: 1},
+                        {max: 20000, tolerance: 2},
+                        {max: 100000, tolerance: 3}
+                    ],
+                    'III': [
+                        {max: 500, tolerance: 1},
+                        {max: 2000, tolerance: 2},
+                        {max: 10000, tolerance: 3}
+                    ],
+                    'IV': [
+                        {max: 50, tolerance: 1},
+                        {max: 200, tolerance: 2},
+                        {max: 1000, tolerance: 3}
+                    ]
+                };
+                
+                const classTolerances = tolerances[balanceClass] || tolerances['II'];
+                const weight_e = weight_mg / e_mg;
+                
+                for (let range of classTolerances) {
+                    if (weight_e <= range.max) {
+                        return range.tolerance * e_mg;
+                    }
+                }
+                
+                return 3 * e_mg;
+            },
+            
+            getWeightClass: function(balanceClass, tolerance_mg) {
+                // Classe de masse recommandée selon EMTM < 1/3 EMTB
+                const requiredEMTM = tolerance_mg / 3;
+                
+                if (requiredEMTM <= 0.3) return 'E2';
+                if (requiredEMTM <= 1) return 'F1';
+                if (requiredEMTM <= 3) return 'F2';
+                return 'M1';
+            }
+        };
+
+        function convertToMg(value, unit) {
+            const conversions = {
+                'mg': 1,
+                'g': 1000,
+                'kg': 1000000
+            };
+            return value * (conversions[unit] || 1);
+        }
+
+        function formatWeight(mg) {
+            if (mg >= 1000000) {
+                return (mg / 1000000).toFixed(3) + ' kg';
+            } else if (mg >= 1000) {
+                return (mg / 1000).toFixed(3) + ' g';
+            } else {
+                return mg.toFixed(3) + ' mg';
+            }
+        }
+
+        function formatWeightForGBP(mg) {
+            // Format spécial pour les documents GBP (sans espaces, virgules pour décimales)
+            if (mg >= 1000) {
+                const grams = mg / 1000;
+                return grams.toFixed(3).replace('.', ',') + 'g';
+            } else {
+                return mg.toFixed(3).replace('.', ',') + 'mg';
+            }
+        }
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            navigator.clipboard.writeText(text).then(function() {
+                // Feedback visuel
+                const originalBg = element.style.background;
+                element.style.background = 'rgba(255,255,255,0.3)';
+                element.style.transition = 'background 0.3s ease';
+                
+                setTimeout(() => {
+                    element.style.background = originalBg;
+                }, 300);
+                
+                // Notification
+                showNotification('📋 Copié dans le presse-papiers !');
+            }).catch(function(err) {
+                console.error('Erreur de copie: ', err);
+                showNotification('❌ Erreur de copie');
+            });
+        }
+
+        function showNotification(message) {
+            // Créer une notification temporaire
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #2c3e50;
+                color: white;
+                padding: 15px 25px;
+                border-radius: 10px;
+                z-index: 1000;
+                font-weight: 600;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+                animation: slideIn 0.3s ease-out;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease-in forwards';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 2000);
+        }
+
+        function calculateControlWeight() {
+            const loading = document.getElementById('loading');
+            const errorMessage = document.getElementById('error-message');
+            const resultsSection = document.getElementById('results-section');
+            const recommendationsSection = document.getElementById('recommendations-section');
+
+            // Reset
+            errorMessage.classList.remove('show');
+            resultsSection.classList.remove('show');
+            recommendationsSection.classList.remove('show');
+            loading.classList.add('show');
+
+            setTimeout(() => {
+                try {
+                    // Récupération des données
+                    const maxCapacity = parseFloat(document.getElementById('max_capacity').value);
+                    const maxUnit = document.getElementById('max_unit_select').value;
+                    const verificationScale = parseFloat(document.getElementById('verification_scale').value);
+                    const eUnit = document.getElementById('e_unit_select').value;
+                    const displayScale = parseFloat(document.getElementById('display_scale').value);
+                    const dUnit = document.getElementById('d_unit_select').value;
+                    const minCapacity = parseFloat(document.getElementById('min_capacity').value);
+                    const minUnit = document.getElementById('min_unit_select').value;
+
+                    // Validation
+                    if (!maxCapacity || !verificationScale || !displayScale || !minCapacity) {
+                        throw new Error('Veuillez remplir tous les champs obligatoires');
+                    }
+
+                    // Conversion en mg
+                    const max_mg = convertToMg(maxCapacity, maxUnit);
+                    const e_mg = convertToMg(verificationScale, eUnit);
+                    const d_mg = convertToMg(displayScale, dUnit);
+                    const min_mg = convertToMg(minCapacity, minUnit);
+
+                    // Calculs
+                    const echelons = Math.floor(max_mg / e_mg);
+                    const balanceClass = balanceClassification.getClass(echelons);
+                    const controlWeight_mg = balanceClassification.getControlWeight(balanceClass, e_mg);
+                    const tolerance_mg = balanceClassification.getTolerance(balanceClass, controlWeight_mg, e_mg);
+                    const weightClass = balanceClassification.getWeightClass(balanceClass, tolerance_mg);
+
+                    // Limites de tolérance
+                    const lowerLimit_mg = controlWeight_mg - tolerance_mg;
+                    const upperLimit_mg = controlWeight_mg + tolerance_mg;
+
+                    // Format pour limites acceptées (format GBP)
+                    const formattedLowerLimit = formatWeightForGBP(lowerLimit_mg);
+                    const formattedUpperLimit = formatWeightForGBP(upperLimit_mg);
+                    const acceptedLimitsFormat = `${formattedLowerLimit} - ${formattedUpperLimit}`;
+
+                    // Affichage des résultats
+                    document.getElementById('balance-class').textContent = `Classe ${balanceClass}`;
+                    document.getElementById('echelons-count').textContent = echelons.toLocaleString('fr-FR');
+                    document.getElementById('balance-class-detail').innerHTML = `
+                        Nombre d'échelons : <span id="echelons-count">${echelons.toLocaleString('fr-FR')}</span>
+                        <span class="class-badge">Norme EN-45501</span>
+                    `;
+
+                    document.getElementById('control-weight').textContent = formatWeight(controlWeight_mg);
+                    document.getElementById('weight-class').textContent = weightClass;
+                    document.getElementById('control-weight-detail').innerHTML = `
+                        Classe de masse recommandée : <span id="weight-class">${weightClass}</span>
+                        <span class="class-badge">Selon EMTM < 1/3 EMTB</span>
+                    `;
+
+                    document.getElementById('tolerance-limits').textContent = `±${formatWeight(tolerance_mg)}`;
+                    document.getElementById('acceptable-range').textContent = 
+                        `${formatWeight(lowerLimit_mg)} - ${formatWeight(upperLimit_mg)}`;
+                    
+                    document.getElementById('accepted-limits').textContent = acceptedLimitsFormat;
+
+                    // Génération des recommandations
+                    generateRecommendations(balanceClass, e_mg, controlWeight_mg, weightClass, echelons);
+
+                    // Génération de la fiche balance
+                    generateBalanceSheet(balanceClass, e_mg, d_mg, max_mg, min_mg, controlWeight_mg, tolerance_mg, weightClass, echelons, acceptedLimitsFormat);
+
+                    calculationPerformed = true;
+                    loading.classList.remove('show');
+                    resultsSection.classList.add('show');
+                    recommendationsSection.classList.add('show');
+                    document.getElementById('balance-sheet-section').classList.add('show');
+
+                } catch (error) {
+                    loading.classList.remove('show');
+                    errorMessage.textContent = error.message;
+                    errorMessage.classList.add('show');
+                }
+            }, 1000);
+        }
+
+        function generateRecommendations(balanceClass, e_mg, controlWeight_mg, weightClass, echelons) {
+            const recommendationsContent = document.getElementById('recommendations-content');
+            
+            let recommendations = [];
+
+            // Recommandations selon la classe
+            const classRecommendations = {
+                'I': {
+                    title: 'Balance de Classe I - Haute Précision',
+                    content: 'Balance analytique nécessitant des précautions strictes : enceinte de protection obligatoire, calibration quotidienne, environnement stable (température, vibrations, courants d\'air).'
+                },
+                'II': {
+                    title: 'Balance de Classe II - Précision Fine',
+                    content: 'Balance adaptée pour les préparations magistrales. Enceinte de protection recommandée pour e ≤ 10mg. Calibration interne quotidienne et contrôle hebdomadaire avec masse étalon.'
+                },
+                'III': {
+                    title: 'Balance de Classe III - Précision Moyenne',
+                    content: 'Balance pour usage commercial et industriel. Moins adaptée pour les préparations pharmaceutiques de petites quantités.'
+                },
+                'IV': {
+                    title: 'Balance de Classe IV - Précision Ordinaire',
+                    content: 'Balance pour usage industriel grossier. Non recommandée pour les préparations pharmaceutiques.'
+                }
+            };
+
+            recommendations.push(classRecommendations[balanceClass]);
+
+            // Recommandations sur la masse de contrôle
+            recommendations.push({
+                title: 'Utilisation de la Masse de Contrôle',
+                content: `Utilisez une masse de ${formatWeight(controlWeight_mg)} de classe ${weightClass}. Contrôle hebdomadaire minimum. La masse doit être en acier inoxydable, manipulée avec des pinces à embouts plastique pour éviter la contamination.`
+            });
+
+            // Recommandations sur la fréquence
+            const frequencyRec = {
+                'I': 'Contrôle quotidien recommandé',
+                'II': 'Contrôle hebdomadaire minimum',
+                'III': 'Contrôle hebdomadaire',
+                'IV': 'Contrôle hebdomadaire'
+            };
+
+            recommendations.push({
+                title: 'Fréquence de Contrôle',
+                content: `${frequencyRec[balanceClass]}. En cas d'utilisation intensive ou d'environnement difficile, augmentez la fréquence. Calibration interne selon les recommandations du fabricant.`
+            });
+
+            // Recommandations réglementaires
+            recommendations.push({
+                title: 'Obligations Réglementaires',
+                content: 'Vérification périodique obligatoire tous les 4 ans par un organisme d\'inspection agréé BELAC. Déclaration au Service de la Métrologie. Conservation du logbook avec tous les contrôles.'
+            });
+
+            // Recommandations selon FTM
+            if (e_mg <= 10) {
+                recommendations.push({
+                    title: 'Conformité FTM',
+                    content: 'Balance adaptée pour peser directement des quantités ≥ 100mg selon le Formulaire Thérapeutique Magistral. Pour les quantités < 100mg, utiliser une trituration ou solution concentrée.'
+                });
+            } else {
+                recommendations.push({
+                    title: 'Limitations FTM',
+                    content: 'Attention : cette balance n\'est pas adaptée pour peser directement des petites quantités de principes actifs selon le FTM. Utilisez systématiquement des triturations pour les quantités < 1g.'
+                });
+            }
+
+            // Génération HTML
+            let recommendationsHTML = '';
+            recommendations.forEach(rec => {
+                recommendationsHTML += `
+                    <div class="recommendation-item">
+                        <h4>${rec.title}</h4>
+                        <p>${rec.content}</p>
+                    </div>
+                `;
+            });
+
+            recommendationsContent.innerHTML = recommendationsHTML;
+        }
+
+        function generateBalanceSheet(balanceClass, e_mg, d_mg, max_mg, min_mg, controlWeight_mg, tolerance_mg, weightClass, echelons, acceptedLimitsFormat) {
+            const balanceSheetPreview = document.getElementById('balance-sheet-preview');
+            
+            const currentDate = new Date().toLocaleDateString('fr-FR');
+            const frequencyMap = {
+                'I': 'Quotidien',
+                'II': 'Hebdomadaire',
+                'III': 'Hebdomadaire',
+                'IV': 'Hebdomadaire'
+            };
+
+            const balanceSheetHTML = `
+                <div class="sheet-header">
+                    <div class="sheet-title">FICHE DE CONTRÔLE BALANCE</div>
+                    <div class="sheet-subtitle">Conforme aux Bonnes Pratiques Pharmaceutiques</div>
+                </div>
+
+                <div class="sheet-content">
+                    <div class="sheet-row">
+                        <div class="sheet-label">Classification :</div>
+                        <div class="sheet-value">Classe ${balanceClass} (${echelons.toLocaleString('fr-FR')} échelons)</div>
+                    </div>
+                    
+                    <div class="sheet-row">
+                        <div class="sheet-label">Portée Maximale :</div>
+                        <div class="sheet-value">${formatWeight(max_mg)}</div>
+                    </div>
+                    
+                    <div class="sheet-row">
+                        <div class="sheet-label">Portée Minimale :</div>
+                        <div class="sheet-value">${formatWeight(min_mg)}</div>
+                    </div>
+                    
+                    <div class="sheet-row">
+                        <div class="sheet-label">Échelon de vérification (e) :</div>
+                        <div class="sheet-value">${formatWeight(e_mg)}</div>
+                    </div>
+                    
+                    <div class="sheet-row">
+                        <div class="sheet-label">Échelon d'affichage (d) :</div>
+                        <div class="sheet-value">${formatWeight(d_mg)}</div>
+                    </div>
+
+                    <div class="sheet-highlight">
+                        <div class="highlight-title">MASSE DE CONTRÔLE</div>
+                        <div class="highlight-value">${formatWeight(controlWeight_mg)} (Classe ${weightClass})</div>
+                    </div>
+
+                    <div class="sheet-highlight">
+                        <div class="highlight-title">LIMITES ACCEPTÉES</div>
+                        <div class="highlight-value">${acceptedLimitsFormat}</div>
+                    </div>
+
+                    <div class="sheet-recommendations">
+                        <h4>📋 CONTRÔLES OBLIGATOIRES</h4>
+                        <ul>
+                            <li><strong>Fréquence :</strong> Contrôle ${frequencyMap[balanceClass].toLowerCase()} minimum</li>
+                            <li><strong>Procédure :</strong> Allumer → Attendre zéro → Poser masse → Lire résultat</li>
+                            <li><strong>Action si hors limites :</strong> Vérifier mise à niveau, calibrer, recommencer</li>
+                            <li><strong>Vérification réglementaire :</strong> Tous les 4 ans par organisme agréé</li>
+                            <li><strong>Manipulation masse :</strong> Utiliser pinces à embouts plastique</li>
+                        </ul>
+                    </div>
+
+                    <div class="sheet-footer">
+                        <strong>Généré le ${currentDate} - Conforme EN-45501 & FTM</strong><br>
+                        <small>À afficher près de la balance pour référence quotidienne</small>
+                    </div>
+                </div>
+            `;
+
+            balanceSheetPreview.innerHTML = balanceSheetHTML;
+        }
+
+        function exportBalanceSheetToPDF() {
+            // Vérifier si un calcul a été effectué
+            if (!calculationPerformed) {
+                showNotification('⚠️ Veuillez d\'abord effectuer un calcul !');
+                return;
+            }
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Configuration
+                doc.setFont("helvetica");
+                const currentDate = new Date().toLocaleDateString('fr-FR');
+
+                // En-tête
+                doc.setFontSize(16);
+                doc.setFont("helvetica", "bold");
+                doc.text("FICHE DE CONTRÔLE BALANCE", 105, 25, { align: "center" });
+                
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "normal");
+                doc.text("Conforme aux Bonnes Pratiques Pharmaceutiques", 105, 32, { align: "center" });
+
+                // Ligne de séparation
+                doc.setLineWidth(0.5);
+                doc.line(20, 40, 190, 40);
+
+                // Récupération des données affichées
+                const balanceClass = document.getElementById('balance-class').textContent;
+                const controlWeight = document.getElementById('control-weight').textContent;
+                const acceptedLimits = document.getElementById('accepted-limits').textContent;
+                const weightClass = document.getElementById('weight-class').textContent;
+                const echelonsCount = document.getElementById('echelons-count').textContent;
+
+                // Caractéristiques techniques
+                let y = 55;
+                doc.setFontSize(12);
+                doc.setFont("helvetica", "bold");
+                doc.text("CARACTÉRISTIQUES TECHNIQUES", 20, y);
+
+                y += 10;
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "normal");
+                
+                const maxCapacity = document.getElementById('max_capacity').value;
+                const maxUnit = document.getElementById('max_unit_select').value;
+                const verificationScale = document.getElementById('verification_scale').value;
+                const eUnit = document.getElementById('e_unit_select').value;
+                const displayScale = document.getElementById('display_scale').value;
+                const dUnit = document.getElementById('d_unit_select').value;
+                const minCapacity = document.getElementById('min_capacity').value;
+                const minUnit = document.getElementById('min_unit_select').value;
+
+                doc.text(`Classification : ${balanceClass} (${echelonsCount} échelons)`, 20, y);
+                y += 7;
+                doc.text(`Portée Maximale : ${maxCapacity} ${maxUnit}`, 20, y);
+                y += 7;
+                doc.text(`Portée Minimale : ${minCapacity} ${minUnit}`, 20, y);
+                y += 7;
+                doc.text(`Échelon de vérification (e) : ${verificationScale} ${eUnit}`, 20, y);
+                y += 7;
+                doc.text(`Échelon d'affichage (d) : ${displayScale} ${dUnit}`, 20, y);
+
+                // Encadré masse de contrôle
+                y += 15;
+                doc.setFillColor(52, 152, 219);
+                doc.rect(20, y-5, 170, 25, 'F');
+                
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(12);
+                doc.setFont("helvetica", "bold");
+                doc.text("MASSE DE CONTRÔLE", 105, y+5, { align: "center" });
+                doc.setFontSize(14);
+                doc.text(`${controlWeight} (Classe ${weightClass})`, 105, y+15, { align: "center" });
+
+                // Encadré limites acceptées
+                y += 35;
+                doc.setFillColor(231, 76, 60);
+                doc.rect(20, y-5, 170, 25, 'F');
+                
+                doc.setFontSize(12);
+                doc.text("LIMITES ACCEPTÉES", 105, y+5, { align: "center" });
+                doc.setFontSize(14);
+                doc.text(acceptedLimits, 105, y+15, { align: "center" });
+
+                // Contrôles obligatoires
+                y += 40;
+                doc.setTextColor(0, 0, 0);
+                doc.setFontSize(12);
+                doc.setFont("helvetica", "bold");
+                doc.text("CONTRÔLES OBLIGATOIRES", 20, y);
+
+                y += 10;
+                doc.setFontSize(9);
+                doc.setFont("helvetica", "normal");
+                
+                const controlInfo = [
+                    "• Fréquence : Contrôle hebdomadaire minimum",
+                    "• Procédure : Allumer → Attendre zéro → Poser masse → Lire résultat",
+                    "• Action si hors limites : Vérifier mise à niveau, calibrer, recommencer",
+                    "• Vérification réglementaire : Tous les 4 ans par organisme agréé",
+                    "• Manipulation masse : Utiliser pinces à embouts plastique",
+                    "• Conservation : Tenir registre des contrôles dans logbook balance"
+                ];
+
+                controlInfo.forEach(info => {
+                    doc.text(info, 20, y);
+                    y += 6;
+                });
+
+                // Pied de page
+                y += 15;
+                doc.setFontSize(8);
+                doc.setFont("helvetica", "bold");
+                doc.text(`Généré le ${currentDate} - Conforme EN-45501 & FTM`, 105, y, { align: "center" });
+                y += 5;
+                doc.setFont("helvetica", "normal");
+                doc.text("À afficher près de la balance pour référence quotidienne", 105, y, { align: "center" });
+
+                // Cadre autour du document
+                doc.setLineWidth(1);
+                doc.rect(15, 15, 180, 250);
+
+                // Téléchargement
+                doc.save(`Fiche_Controle_Balance_${balanceClass}_${currentDate.replace(/\//g, '-')}.pdf`);
+
+                showNotification('📄 Fiche balance exportée avec succès !');
+
+            } catch (error) {
+                console.error('Erreur lors de l\'export PDF:', error);
+                showNotification('❌ Erreur lors de l\'export PDF');
+            }
+        }
+
+        // Exemples prédéfinis
+        function loadExample(type) {
+            switch(type) {
+                case 'analytical':
+                    document.getElementById('max_capacity').value = '220';
+                    document.getElementById('max_unit_select').value = 'g';
+                    document.getElementById('verification_scale').value = '1';
+                    document.getElementById('e_unit_select').value = 'mg';
+                    document.getElementById('display_scale').value = '0.1';
+                    document.getElementById('d_unit_select').value = 'mg';
+                    document.getElementById('min_capacity').value = '10';
+                    document.getElementById('min_unit_select').value = 'mg';
+                    break;
+                case 'precision':
+                    document.getElementById('max_capacity').value = '620';
+                    document.getElementById('max_unit_select').value = 'g';
+                    document.getElementById('verification_scale').value = '10';
+                    document.getElementById('e_unit_select').value = 'mg';
+                    document.getElementById('display_scale').value = '1';
+                    document.getElementById('d_unit_select').value = 'mg';
+                    document.getElementById('min_capacity').value = '100';
+                    document.getElementById('min_unit_select').value = 'mg';
+                    break;
+                case 'industrial':
+                    document.getElementById('max_capacity').value = '3100';
+                    document.getElementById('max_unit_select').value = 'g';
+                    document.getElementById('verification_scale').value = '100';
+                    document.getElementById('e_unit_select').value = 'mg';
+                    document.getElementById('display_scale').value = '100';
+                    document.getElementById('d_unit_select').value = 'mg';
+                    document.getElementById('min_capacity').value = '0.5';
+                    document.getElementById('min_unit_select').value = 'g';
+                    break;
+            }
+            
+            // Mise à jour des indicateurs
+            document.getElementById('max_unit').textContent = document.getElementById('max_unit_select').value;
+            document.getElementById('e_unit').textContent = document.getElementById('e_unit_select').value;
+            document.getElementById('d_unit').textContent = document.getElementById('d_unit_select').value;
+            document.getElementById('min_unit').textContent = document.getElementById('min_unit_select').value;
+        }
+    </script>
+</body>
+</html>
